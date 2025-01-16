@@ -1,0 +1,34 @@
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: database-albumgenie
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: albumgenie
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: backend-albumgenie
+    environment:
+      DATABASE_URL: postgres://user:password@postgres:5432/albumgenie
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/:/usr/share/nginx/html
+
+volumes:
+  postgres-data:
