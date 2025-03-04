@@ -24,11 +24,11 @@ services:
       - "8000:8000"
     
   frontend:
-    image: nginx:alpine
+    build:
+      context: ./frontend
+    container_name: frontend-albumgenie
     ports:
       - "80:80"
-    volumes:
-      - ./frontend/:/usr/share/nginx/html
 
 volumes:
   postgres-data:
