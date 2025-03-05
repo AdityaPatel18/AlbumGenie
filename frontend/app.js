@@ -29,22 +29,14 @@ fileInput.addEventListener('change', (event) => {
 
 uploadButton.addEventListener('click', () => {
     const formData = new FormData();
-    files.forEach(file => {
-        formData.append('files', file);  // Ensure the key matches the backend
-        console.log("Appending file:", file.name);  // Debugging
-    });
+    files.forEach(file => formData.append('files', file));
 
-    console.log("Sending files to backend...");  // Debugging
-    fetch('/upload', {
+    fetch('http://localhost:8000/upload', {
         method: 'POST',
         body: formData
     })
-    .then(response => {
-        console.log("Response status:", response.status);  // Debugging
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log("Response data:", data);  // Debugging
         alert('Files uploaded successfully!');
     })
     .catch(error => {

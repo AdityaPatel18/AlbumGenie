@@ -5,6 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import psycopg2
 from io import BytesIO
+from fastapi.responses import StreamingResponse
 
 # Database setup (adjust these parameters as needed)
 DATABASE_URL = "postgresql://user:password@postgres/albumgenie"
@@ -46,14 +47,33 @@ def get_db():
 @app.post("/upload")
 async def upload_files(files: list[UploadFile] = File(...), db: Session = Depends(get_db)):
     try:
+        if not files:
+            print("No files received")
+            return JSONResponse(content={"message": "No files uploaded"}, status_code=400)
+
         for file in files:
             file_content = await file.read()
+            print(f"Received file: {file.filename}, size: {len(file_content)} bytes")
             db_file = FileModel(filename=file.filename, filedata=file_content)
             db.add(db_file)
 
-        db.commit()  # Commit all files at once
+        db.commit()
+        files = db.query(FileModel).all()
+
         return JSONResponse(content={"message": "Files uploaded successfully!"}, status_code=200)
-    
+
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Error uploading files: " + str(e))
+
+@app.get("/files")
+async def list_files(db: Session = Depends(get_db)):
+    """
+    Retrieve a list of all uploaded files
+    """
+    try:
+        files = db.query(FileModel).all()
+        file_list = [{"id": file.id, "filename": file.filename} for file in files]
+        return JSONResponse(content={"files": file_list})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving files: {str(e)}")
