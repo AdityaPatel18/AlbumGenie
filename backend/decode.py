@@ -1,33 +1,30 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
-from sqlalchemy import create_engine, Column, Integer, String, LargeBinary
+from sqlalchemy import ARRAY, create_engine, Column, Integer, String, LargeBinary, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-import psycopg2
-from io import BytesIO
-from fastapi.responses import StreamingResponse
+import cv2
+import numpy as np
+from deepface import DeepFace
+from sklearn.metrics.pairwise import cosine_similarity
 
-# Database setup (adjust these parameters as needed)
 DATABASE_URL = "postgresql://user:password@postgres/albumgenie"
 Base = declarative_base()
 from fastapi.middleware.cors import CORSMiddleware
 
-# Define the File model for the database
 class FileModel(Base):
     __tablename__ = "files"
     
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String, index=True)
     filedata = Column(LargeBinary)
+    individuals = Column(ARRAY(String), nullable=True)
 
-# Create an engine and session for interacting with the database
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create the table in the database
 Base.metadata.create_all(bind=engine)
 
-# FastAPI app instance
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -36,7 +33,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Dependency to get DB session
+
 def get_db():
     db = SessionLocal()
     try:
@@ -44,36 +41,134 @@ def get_db():
     finally:
         db.close()
 
+global_face_context = {
+    "embeddings": [],  # List of facial embeddings
+    "labels": [],       # List of corresponding person labels
+}
+
+def extract_face_embedding(image):
+    try:
+        embedding = DeepFace.represent(image, model_name="Facenet", model_path="faceNetWeights.h5", enforce_detection=False)
+        return embedding[0]["embedding"]
+    except Exception as e:
+        print(f"Error extracting embedding: {e}")
+        return None
+
+def preprocessor(file_content: bytes) -> list:
+        print("Starting preprocessor...")
+        image_array = np.frombuffer(file_content, dtype=np.uint8)
+        image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+        
+        if image is None:
+            print("Failed to decode image")
+            return []
+            
+        print(f"Image shape: {image.shape}")
+
+        cropped_faces = detect_crop_faces(image)
+        print(f"Detected {len(cropped_faces)} faces")
+
+        person_labels = []
+
+        for face in cropped_faces:
+            embedding = extract_face_embedding(face)
+
+            if embedding is None:
+                continue
+            
+            if global_face_context["embeddings"]:
+                similarities = cosine_similarity([embedding], global_face_context["embeddings"])
+                max_similarity_index = similarities.argmax()
+                max_similarity = similarities[0][max_similarity_index]
+
+                if max_similarity > 0.6:
+                    person_labels.append(global_face_context["labels"][max_similarity_index])
+                    continue
+            new_label = f"Person {len(global_face_context['labels']) + 1}"
+            global_face_context["embeddings"].append(embedding)
+            global_face_context["labels"].append(new_label)
+            person_labels.append(new_label)
+        return person_labels
+
+
+def detect_crop_faces(image):
+    try:
+        face_objs = DeepFace.extract_faces(image, detector_backend="opencv")
+
+    except Exception as e:
+        print(f"Error detecting any faces {e}")
+        return []
+    cropped_faces = []
+    for face_obj in face_objs:
+        x, y, w, h = face_obj["facial_area"]["x"], face_obj["facial_area"]["y"], \
+                      face_obj["facial_area"]["w"], face_obj["facial_area"]["h"]
+        cropped_face = image[y:y+h, x:x+w]
+        cropped_faces.append(cropped_face)
+
+    return cropped_faces
+
+
 @app.post("/upload")
 async def upload_files(files: list[UploadFile] = File(...), db: Session = Depends(get_db)):
     try:
         if not files:
-            print("No files received")
             return JSONResponse(content={"message": "No files uploaded"}, status_code=400)
-
+        
+        uploaded_files = []
         for file in files:
             file_content = await file.read()
-            print(f"Received file: {file.filename}, size: {len(file_content)} bytes")
-            db_file = FileModel(filename=file.filename, filedata=file_content)
+            
+            print(f"Uploading: {file.filename}")
+            print(f"File Size: {len(file_content)} bytes")
+            print(f"Content Type: {file.content_type}")
+            
+            person_attributes = preprocessor(file_content)
+            db_file = FileModel(
+                filename=file.filename, 
+                filedata=file_content,
+                individuals = person_attributes
+            )
             db.add(db_file)
-
+            uploaded_files.append(file.filename)
         db.commit()
-        files = db.query(FileModel).all()
-
-        return JSONResponse(content={"message": "Files uploaded successfully!"}, status_code=200)
-
+        
+        return JSONResponse(
+            content={
+                "message": "Files uploaded successfully!", 
+                "uploaded_files": uploaded_files
+            }, 
+            status_code=200
+        )
+    
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Error uploading files: " + str(e))
-
+        print(f"Upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error uploading files: {str(e)}")
+    
 @app.get("/files")
 async def list_files(db: Session = Depends(get_db)):
-    """
-    Retrieve a list of all uploaded files
-    """
     try:
         files = db.query(FileModel).all()
-        file_list = [{"id": file.id, "filename": file.filename} for file in files]
+        file_list = [
+            {
+                "id": file.id, 
+                "filename": file.filename, 
+                "individuals": file.individuals,
+                "file_size": len(file.filedata) if file.filedata else 0
+            } for file in files
+        ]
         return JSONResponse(content={"files": file_list})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving files: {str(e)}")
+
+@app.post("/reset-database")
+async def reset_database(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("TRUNCATE TABLE files RESTART IDENTITY CASCADE"))
+        db.commit()
+        global_face_context["embeddings"].clear()
+        global_face_context["labels"].clear()
+        return {"message": "Database and global context reset successfully!"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error resetting database: {str(e)}")
