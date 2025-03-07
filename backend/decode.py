@@ -4,6 +4,8 @@ from sqlalchemy import ARRAY, create_engine, Column, Integer, String, LargeBinar
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import cv2
+import base64
+
 import numpy as np
 from deepface import DeepFace
 from sklearn.metrics.pairwise import cosine_similarity
@@ -48,7 +50,7 @@ global_face_context = {
 
 def extract_face_embedding(image):
     try:
-        embedding = DeepFace.represent(image, model_name="Facenet", model_path="faceNetWeights.h5", enforce_detection=False)
+        embedding = DeepFace.represent(image, model_name="Facenet", enforce_detection=False)
         return embedding[0]["embedding"]
     except Exception as e:
         print(f"Error extracting embedding: {e}")
@@ -172,3 +174,19 @@ async def reset_database(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error resetting database: {str(e)}")
+
+
+@app.get("/images")
+def get_image(db: Session = Depends(get_db)):
+    files = db.query(FileModel).all()
+    image_list = []
+    for file in files:
+        # Decode the binary image data to Base64
+        image_data = base64.b64encode(file.filedata).decode("utf-8")
+        image_list.append({
+            "id": file.id,
+            "individuals": file.individuals,
+            "image_data": image_data  # Base64-encoded image
+        })
+    
+    return {"images": image_list}

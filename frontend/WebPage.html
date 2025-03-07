@@ -72,21 +72,17 @@
     </style>
 </head>
 <body>
-
-<div class="container">
-    <div class="file-box" id="file-box">
+    <div id="app">
+        <div class="container">
+            <div class="file-box" id="file-box"></div>
+            <div class="controls">
+                <button class="add-button" id="add-button">Add</button>
+                <button class="upload-button" id="upload-button">Upload</button>
+            </div>
+        </div>
+        <input type="file" id="file-input" multiple style="display: none;">
     </div>
-    <div class="controls">
-        <button class="add-button" id="add-button">Add</button>
-        <button class="upload-button" id="upload-button">Upload</button>
-    </div>
-</div>
 
-<input type="file" id="file-input" multiple style="display: none;">
-
-<script
-src="app.js"
-></script>
-
+    <script src="app.js"></script>
 </body>
 </html>
