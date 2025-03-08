@@ -46,7 +46,8 @@ def get_db():
 
 global_face_context = {
     "embeddings": [],  # List of facial embeddings
-    "labels": [],       # List of corresponding person labels
+    "labels": [],
+    "face": [],              # List of corresponding person labels
 }
 
 def extract_face_embedding(image):
@@ -90,6 +91,7 @@ def preprocessor(file_content: bytes) -> list:
             new_label = f"Person {len(global_face_context['labels']) + 1}"
             global_face_context["embeddings"].append(embedding)
             global_face_context["labels"].append(new_label)
+            global_face_context["face"].append(face)
             person_labels.append(new_label)
         return person_labels
 
@@ -179,7 +181,7 @@ async def reset_database(db: Session = Depends(get_db)):
 
 @app.get("/images")
 def get_image(db: Session = Depends(get_db)):
-    time.sleep(10);
+    time.sleep(10)
     files = db.query(FileModel).all()
     image_list = []
     for file in files:
@@ -188,7 +190,44 @@ def get_image(db: Session = Depends(get_db)):
         image_list.append({
             "id": file.id,
             "individuals": file.individuals,
-            "image_data": image_data  # Base64-encoded image
+            "image_data": image_data 
         })
     
     return {"images": image_list}
+
+@app.get("/filter_options")
+def get_options():
+    time.sleep(10)
+    return global_face_context["labels"]
+        
+
+@app.post("/apply_filter")
+def apply_filter(people: list[str] ,db:Session = Depends(get_db)):
+    files = db.query(FileModel).all()
+    image_list = []
+    print(people)
+    for file in files:
+        if all(person in file.individuals for person in people):
+            image_data = base64.b64encode(file.filedata).decode("utf-8")
+            image_list.append({
+                "id": file.id,
+                "individuals": file.individuals,
+                "image_data": image_data 
+            })
+    return {"images": image_list}
+
+@app.get("/get_faces")
+def get_faces():
+    return {"images": global_face_context["face"]}
+
+@app.post("identify_individual")
+def identify_individual():
+    time.sleep(10)
+    for i in range(len(files)):
+        if i < len(global_face_context):
+            global_face_context[i]["labels"].append(files[i]["name"])
+        else:
+            print(f"No face context found for file: {files[i]['name']}")
+
+    return None
+        

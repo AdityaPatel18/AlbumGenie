@@ -85,3 +85,39 @@ button:focus, select:focus {
     outline: none;
     border-color: #4CAF50;
 }
+
+.dropdown-checkbox {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .dropdown-button {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: rgb(203, 25, 25);
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    padding: 10px;
+  }
+  
+  .dropdown-option {
+    display: block;
+    margin: 5px 0;
+  }
+  
+  .selected-persons {
+    margin-top: 10px;
+    font-size: 14px;
+  }
