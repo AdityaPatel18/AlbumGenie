@@ -5,6 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import cv2
 import base64
+import time
 
 import numpy as np
 from deepface import DeepFace
@@ -178,6 +179,7 @@ async def reset_database(db: Session = Depends(get_db)):
 
 @app.get("/images")
 def get_image(db: Session = Depends(get_db)):
+    time.sleep(10);
     files = db.query(FileModel).all()
     image_list = []
     for file in files:
