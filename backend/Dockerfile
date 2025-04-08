@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir -r requirements.txt tf-keras scikit-learn &&\
 COPY faceNetWeights.h5 /root/.deepface/weights/facenet_weights.h5
 
 COPY decode.py .
-CMD ["uvicorn", "decode:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "decode:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import './FileUpload.css';
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 
 const FileUpload = () => {
   const [files, setFiles] = useState([]);
+  const navigate = useNavigate();
 
   const handleFileSelection = (event) => {
     const selectedFiles = Array.from(event.target.files).filter(
@@ -14,36 +16,35 @@ const FileUpload = () => {
   };
 
   // Handle file upload
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (files.length === 0) {
       alert('Please select at least one file to upload.');
       return;
     }
 
+    try {
     // Reset the database
-    fetch('http://localhost:8000/reset-database', {
+    await fetch('http://localhost:8000/reset-database', {
       method: 'POST',
-    })
-      .then(() => {
+    });
         const formData = new FormData();
         files.forEach((file) => formData.append('files', file));
 
-        // Upload files after database is reset
-        return fetch('http://localhost:8000/upload', {
+        const response = await fetch('http://localhost:8000/upload', {
           method: 'POST',
           body: formData,
         });
-      })
-      //if there is a response get it to json format
-      .then((response) => {
+
         if (!response.ok) {
           throw new Error(`Upload failed: ${response.statusText}`);
         }
-        return response.json();
-      })
-      .catch((error) => {
+        const result = await response.json();
+        console.log('Upload successful:', result);
+      navigate('/FaceIdentification');
+    }
+    catch(error){
         console.error('Error uploading files:', error);
-      });
+      }
   };
 
   return (
@@ -68,11 +69,9 @@ const FileUpload = () => {
           >
             Add
           </button>
-          <Link to="/main">
           <button className="upload-button" onClick={handleUpload}>
-            Upload
+            Uplasdfasdfoad
           </button>
-          </Link>
         </div>
       </div>
 

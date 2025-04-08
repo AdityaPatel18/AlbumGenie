@@ -6,6 +6,11 @@ from sqlalchemy.orm import sessionmaker, Session
 import cv2
 import base64
 import time
+from fastapi.responses import FileResponse
+import tempfile
+import zipfile
+import os
+import shutil
 
 import numpy as np
 from deepface import DeepFace
@@ -197,9 +202,8 @@ def get_image(db: Session = Depends(get_db)):
 
 @app.get("/filter_options")
 def get_options():
-    time.sleep(10)
     return global_face_context["labels"]
-        
+
 
 @app.post("/apply_filter")
 def apply_filter(people: list[str] ,db:Session = Depends(get_db)):
@@ -207,6 +211,7 @@ def apply_filter(people: list[str] ,db:Session = Depends(get_db)):
     image_list = []
     print(people)
     for file in files:
+        print(file.individuals)
         if all(person in file.individuals for person in people):
             image_data = base64.b64encode(file.filedata).decode("utf-8")
             image_list.append({
@@ -214,20 +219,78 @@ def apply_filter(people: list[str] ,db:Session = Depends(get_db)):
                 "individuals": file.individuals,
                 "image_data": image_data 
             })
+    print(image_list)
     return {"images": image_list}
 
 @app.get("/get_faces")
 def get_faces():
-    return {"images": global_face_context["face"]}
+    face_images = []
+    for face, label in zip(global_face_context["face"], global_face_context["labels"]):
+        _, buffer = cv2.imencode('.jpg', face)
+        face_base64 = base64.b64encode(buffer).decode('utf-8')
+        face_images.append({
+            "image_data": face_base64,
+            "label": label
+        })
+    return {"images": face_images}
 
-@app.post("identify_individual")
+
+
+@app.post("/identify_individual")
 def identify_individual():
-    time.sleep(10)
-    for i in range(len(files)):
+    for i in range(len(global_face_context["labels"])):
         if i < len(global_face_context):
             global_face_context[i]["labels"].append(files[i]["name"])
         else:
             print(f"No face context found for file: {files[i]['name']}")
 
     return None
+
+@app.post("/update_faces")
+def update_faces(faces_data: dict, db: Session = Depends(get_db)):
+    try:
+        # Extract name changes from request
+        updated_faces = faces_data.get("faces", [])
+        name_changes = {}
         
+        # Update in-memory face context and build name mapping
+        for i, face in enumerate(updated_faces):
+            if i < len(global_face_context["labels"]):
+                old_name = global_face_context["labels"][i]
+                new_name = face.get("name", old_name)
+                
+                if old_name != new_name:
+                    name_changes[old_name] = new_name
+                    global_face_context["labels"][i] = new_name
+        
+        # Update database with a single SQL query for each name change
+        for old_name, new_name in name_changes.items():
+            db.execute(
+                text("UPDATE files SET individuals = array_replace(individuals, :old_name, :new_name)"),
+                {"old_name": old_name, "new_name": new_name}
+            )
+        
+        db.commit()
+        return {"status": "success", "message": "Names updated successfully"}
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+        
+@app.post("/create_folder")
+def create_folder(selected_ids: list[int], db: Session = Depends(get_db)):
+    # Create a temporary directory
+    temp_dir = tempfile.mkdtemp()
+    zip_path = os.path.join(temp_dir, "images.zip")
+
+    with zipfile.ZipFile(zip_path, "w") as zipf:
+        for file_id in selected_ids:
+            file = db.query(FileModel).filter(FileModel.id == file_id).first()
+            if file:
+                file_name = f"image_{file.id}.jpg"
+                image_path = os.path.join(temp_dir, file_name)
+                with open(image_path, "wb") as f:
+                    f.write(file.filedata)
+                zipf.write(image_path, arcname=file_name)
+
+    return FileResponse(zip_path, media_type="application/zip", filename="images.zip")
