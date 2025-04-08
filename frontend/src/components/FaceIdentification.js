@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './FaceIdentification.css'
+import { Save, User } from 'lucide-react';
+
 
 const FaceIdentification = () => {
   const [faces, setFaces] = useState([]);
@@ -83,29 +85,63 @@ const FaceIdentification = () => {
 
   return (
     <div className="face-identification">
-      <h2>Identify Faces</h2>
-      <div className="faces-grid">
-        {faces.map((face, index) => (
-          <div key={index} className="face-card">
-            <div className="face-image-container">
-            <img src={face.url} alt={`uploaded-image-${index}`} />
-
-            </div>
-            <div className="name-input-container">
-              <input
-                type="text"
-                value={nameInputs[index] || ''}
-                onChange={(e) => handleNameChange(index, e.target.value)}
-                placeholder="Enter name"
-                className="name-input"
-              />
-            </div>
+      <div className="face-id-wrapper">
+        {/* Decorative elements */}
+        <div className="decorative-bubble bubble-top-right"></div>
+        <div className="decorative-bubble bubble-bottom-left"></div>
+        
+        {/* Main container */}
+        <div className="face-id-container">
+          {/* Header */}
+          <div className="face-id-header">
+            <h2 className="face-id-title">
+              <User className="face-id-icon" />
+              Identify Faces
+            </h2>
+            <p className="face-id-subtitle">Label the detected faces in your photos</p>
           </div>
-        ))}
+          
+          {/* Content */}
+          <div className="face-id-content">
+            {faces.length === 0 ? (
+              <div className="no-faces">
+                <User size={48} strokeWidth={1} />
+                <p>No faces detected in your photos</p>
+              </div>
+            ) : (
+              <>
+                <div className="faces-grid">
+                  {faces.map((face, index) => (
+                    <div key={index} className="face-card">
+                      <div className="face-image-container">
+                        <img 
+                          src={face.url} 
+                          alt={`Face ${index + 1}`}
+                          className="face-image" 
+                        />
+                      </div>
+                      <div className="name-input-container">
+                        <input
+                          type="text"
+                          value={nameInputs[index] || ''}
+                          onChange={(e) => handleNameChange(index, e.target.value)}
+                          placeholder="Enter name"
+                          className="name-input"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <button onClick={saveNames} className="save-button">
+                  <Save size={18} />
+                  Save All Names
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
-      <button onClick={saveNames} className="save-button">
-        Save All Names
-      </button>
     </div>
   );
 };

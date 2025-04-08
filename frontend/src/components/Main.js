@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./Main.css";
-import "./DropDown";
+import { 
+  Filter, 
+  ChevronDown, 
+  ChevronUp, 
+  FolderPlus, 
+  CheckSquare, 
+  Square,
+  Folder,
+  Home as HomeIcon
+} from 'lucide-react';
 
 const Home = () => {
   const [images, setImages] = useState([]);
@@ -15,22 +24,30 @@ const Home = () => {
 
   useEffect(() => {
     const fetchImages = async () => {
-      const response = await fetch("http://localhost:8000/images");
-      const data = await response.json();
+      try {
+        const response = await fetch("http://localhost:8000/images");
+        const data = await response.json();
 
-      const imageUrls = data.images.map((image) => ({
-        id: image.id,
-        url: `data:image/jpeg;base64,${image.image_data}`,
-        people: image.people || [], // Assuming each image has a 'people' array property
-      }));
-      setImages(imageUrls);
-      setFilteredImages(imageUrls);
+        const imageUrls = data.images.map((image) => ({
+          id: image.id,
+          url: `data:image/jpeg;base64,${image.image_data}`,
+          people: image.people || [],
+        }));
+        setImages(imageUrls);
+        setFilteredImages(imageUrls);
+      } catch (error) {
+        console.error("Error fetching images:", error);
+      }
     };
 
     const fetchFilters = async () => {
-      const response = await fetch("http://localhost:8000/filter_options");
-      const data = await response.json();
-      setFilters(data);
+      try {
+        const response = await fetch("http://localhost:8000/filter_options");
+        const data = await response.json();
+        setFilters(data);
+      } catch (error) {
+        console.error("Error fetching filters:", error);
+      }
     };
 
     fetchImages();
@@ -56,7 +73,7 @@ const Home = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(selectedFilters), // Just send the array
+        body: JSON.stringify(selectedFilters),
       });
 
       if (!response.ok) {
@@ -66,11 +83,11 @@ const Home = () => {
       const data = await response.json();
 
       const imageUrls = data.images.map((image) => ({
+        id: image.id,
         url: `data:image/jpeg;base64,${image.image_data}`,
-        people: image.individuals || [],
+        people: image.people || image.individuals || [],
       }));
 
-      setImages(imageUrls);
       setFilteredImages(imageUrls);
     } catch (error) {
       console.error("Error applying filter:", error);
@@ -91,7 +108,7 @@ const Home = () => {
 
   const selectAll = () => {
     const newSelected = {};
-    images.forEach((image) => {
+    filteredImages.forEach((image) => {
       newSelected[image.id] = true;
     });
     setSelectedImages(newSelected);
@@ -105,51 +122,63 @@ const Home = () => {
     const selectedIds = Object.keys(selectedImages).filter(
       (id) => selectedImages[id]
     );
-  
-    const response = await fetch("http://localhost:8000/create_folder", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(selectedIds),
-    });
-  
-    if (!response.ok) {
-      console.error("Failed to download folder");
+    
+    if (selectedIds.length === 0) {
+      alert("Please select at least one image");
       return;
     }
   
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "images.zip";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
+    try {
+      const response = await fetch("http://localhost:8000/create_folder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(selectedIds),
+      });
+    
+      if (!response.ok) {
+        throw new Error("Failed to download folder");
+      }
+    
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "images.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error creating folder:", error);
+      alert("Failed to create folder");
+    }
   };
 
   const handleLongPress = (imageId) => {
     setLongPressImage(imageId);
-    // Show enlarged image when long press occurs
   };
 
   const handlePressStart = (imageId) => {
     const timer = setTimeout(() => {
       handleLongPress(imageId);
-    }, 250); // 500ms long press duration
+    }, 250);
     setPressTimer(timer);
   };
 
   const handlePressEnd = () => {
-    clearTimeout(pressTimer);
-    setPressTimer(null);
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      setPressTimer(null);
+    }
   };
 
   const handlePressCancel = () => {
-    clearTimeout(pressTimer);
-    setPressTimer(null);
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      setPressTimer(null);
+    }
   };
 
   const closeEnlargedImage = () => {
@@ -159,80 +188,140 @@ const Home = () => {
     setPressTimer(timer);
   };
   
-
   return (
-    <div className="main-container">
-      <div className="top-bar">
-        <Link to="/">
-          <button className="top-button">Home</button>
-        </Link>
-  
-        <div className="top-controls">
-          <div className="dropdown-checkbox">
-            <button className="dropdown-toggle" onClick={toggleDropdown}>
-              Select People {isOpen ? "▲" : "▼"}
-            </button>
-            {isOpen && (
-              <div className="dropdown-menu">
-                {filters.map((filter, index) => (
-                  <label key={index} className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      checked={selectedFilters.includes(filter)}
-                      onChange={() => handleCheckboxChange(filter)}
-                    />
-                    {filter}
-                  </label>
-                ))}
+    <div className="gallery-container">
+      <div className="gallery-wrapper">
+        {/* Decorative elements */}
+        <div className="decorative-bubble bubble-top-left"></div>
+        <div className="decorative-bubble bubble-bottom-right"></div>
+        
+        {/* Main container */}
+        <div className="gallery-main">
+          {/* Top navigation bar */}
+          <div className="gallery-header">
+            <Link to="/" className="home-link">
+              <button className="home-button">
+                <HomeIcon size={18} />
+                Home
+              </button>
+            </Link>
+            
+            <div className="gallery-controls">
+              <div className="filter-dropdown">
+                <button 
+                  className="dropdown-button" 
+                  onClick={toggleDropdown}
+                >
+                  Filter People
+                  {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                
+                {isOpen && (
+                  <div className="dropdown-content">
+                    {filters.map((filter, index) => (
+                      <label key={index} className="filter-option">
+                        <input
+                          type="checkbox"
+                          checked={selectedFilters.includes(filter)}
+                          onChange={() => handleCheckboxChange(filter)}
+                          className="filter-checkbox"
+                        />
+                        <span className="filter-label">{filter}</span>
+                      </label>
+                    ))}
+                    
+                    <div className="filter-actions">
+                      <button className="filter-action-button" onClick={applyFilter}>Apply</button>
+                      <button className="filter-action-button" onClick={clearFilters}>Clear</button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+              
+              <button className="control-button filter-button" onClick={applyFilter}>
+                <Filter size={16} />
+                <span>Apply</span>
+              </button>
+              
+              <button className="control-button select-all" onClick={selectAll}>
+                <CheckSquare size={16} />
+                <span>Select All</span>
+              </button>
+              
+              <button className="control-button deselect-all" onClick={deselectAll}>
+                <Square size={16} />
+                <span>Deselect</span>
+              </button>
+              
+              <button className="primary-button" onClick={createFolder}>
+                <FolderPlus size={16} />
+                <span>Create Folder</span>
+              </button>
+            </div>
           </div>
-  
-          <button className="action-button" onClick={applyFilter}>Filter</button>
-          <button className="action-button" onClick={selectAll}>Select All</button>
-          <button className="action-button" onClick={deselectAll}>Deselect All</button>
-          <button className="primary-button" onClick={createFolder}>Create Folder</button>
+          
+          {/* Main content area */}
+          <div className="gallery-content">
+            {/* Folder sidebar */}
+            <div className="folder-sidebar">
+              <div className="folder-header">
+                <Folder size={18} />
+                <h3>Folders</h3>
+              </div>
+              
+              <div className="folder-empty">
+                <p>No folders created yet</p>
+              </div>
+            </div>
+            
+            {/* Image grid */}
+            <div className="image-grid">
+              {filteredImages.length === 0 ? (
+                <div className="no-images">
+                  <p>No images match your filter criteria</p>
+                </div>
+              ) : (
+                filteredImages.map((image) => (
+                  <div
+                    key={image.id}
+                    className={`image-item ${selectedImages[image.id] ? "selected" : ""}`}
+                    onClick={() => toggleSelection(image.id)}
+                    onMouseDown={() => handlePressStart(image.id)}
+                    onMouseUp={handlePressEnd}
+                    onMouseLeave={handlePressCancel}
+                    onTouchStart={() => handlePressStart(image.id)}
+                    onTouchEnd={handlePressEnd}
+                    onTouchCancel={handlePressCancel}
+                  >
+                    <div className="image-wrapper">
+                      <img src={image.url} alt="Gallery image" />
+                      {selectedImages[image.id] && (
+                        <div className="select-badge">✓</div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
-  
-      <div className="main-content">
-        <div className="folder-pane" id="folder-pane">
-          <p>No folders created yet</p>
-        </div>
-  
-        <div className="grid-pane" id="grid-pane">
-        {filteredImages.map((image) => (
-        <div
-          key={image.id}
-          className={`image-container ${selectedImages[image.id] ? "selected" : ""}`}
-          onClick={() => toggleSelection(image.id)}
-          onMouseDown={() => handlePressStart(image.id)}
-          onMouseUp={handlePressEnd}
-          onMouseLeave={handlePressCancel}
-        >
-          <img src={image.url} alt="" />
-          {selectedImages[image.id] && (
-            <div className="selection-indicator">✓</div>
-          )}
-        </div>
-      ))}
       
-      {/* Modal for long press (enlarged image) */}
+      {/* Image modal for enlarged view */}
       {longPressImage && (
-        <div className="image-modal" onMouseUp={closeEnlargedImage}>
-          <div className="modal-backdrop"></div>
-          <img 
-            src={filteredImages.find(img => img.id === longPressImage)?.url} 
-            alt="Enlarged" 
-            className="modal-img" 
-          />
+        <div className="modal" onMouseUp={closeEnlargedImage}>
+          <div className="modal-overlay"></div>
+          <div className="modal-content">
+            <img
+              src={filteredImages.find(img => img.id === longPressImage)?.url}
+              alt="Enlarged view"
+              className="modal-image"
+            />
+          </div>
         </div>
       )}
-        </div>
-      </div>
     </div>
   );
-  
 };
 
 export default Home;

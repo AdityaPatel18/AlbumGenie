@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './FileUpload.css';
 import { Link } from 'react-router-dom';
+import { Upload, X, Check, Image as ImageIcon } from 'lucide-react';
+
 import { useNavigate } from 'react-router-dom';
 
 
@@ -48,42 +50,89 @@ const FileUpload = () => {
   };
 
   return (
-    <div className="app">
-      <div className="container">
-        {/* File display area */}
-        <div className="file-box">
-          {files.map((file, index) => (
-            <div key={index} className="file-item">
-              <img
-                src={URL.createObjectURL(file)}
-                alt={`uploaded-image-${index}`}
-              />
+    <div className="app-container">
+      <div className="album-genie-wrapper">
+        <div className="decorative-bubble bubble-top-left"></div>
+        <div className="decorative-bubble bubble-bottom-right"></div>
+        
+        {/* Main container */}
+        <div className="main-container">
+          {/* Header */}
+          <div className="app-header">
+            <h1 className="app-title">
+              <ImageIcon className="app-icon" />
+              AlbumGenie
+            </h1>
+            <p className="app-subtitle">Upload and organize your photos</p>
+          </div>
+          
+          {/* Content */}
+          <div className="app-content">
+            {/* File display area */}
+            <div className="file-display-area">
+              {files.length === 0 ? (
+                <div className="empty-state">
+                  <ImageIcon size={48} strokeWidth={1} />
+                  <p>Drag photos here or use the Add button</p>
+                </div>
+              ) : (
+                <div className="file-grid">
+                  {files.map((file, index) => (
+                    <div key={index} className="file-item">
+                      <div className="file-thumbnail">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`uploaded-image-${index}`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
-        </div>
-
-        <div className="controls">
-          <button
-            className="add-button"
-            onClick={() => document.getElementById('file-input').click()}
-          >
-            Add
-          </button>
-          <button className="upload-button" onClick={handleUpload}>
-            Uplasdfasdfoad
-          </button>
+            
+            {/* Controls */}
+            <div className="control-buttons">
+              <button
+                onClick={() => {
+                  const fileInput = document.getElementById('file-input');
+                  if (fileInput) {
+                    fileInput.click();
+                  }
+                }}
+                className="add-button"
+              >
+                <Upload size={18} />
+                Add Photos
+              </button>
+              
+              <button 
+                onClick={handleUpload}
+                className="process-button"
+                disabled={files.length === 0}
+              >
+                <Check size={18} />
+                Process
+              </button>
+            </div>
+            
+            <div className="file-formats">
+              Supported formats: JPG, PNG, WEBP
+            </div>
+          </div>
         </div>
       </div>
-
+      
       <input
         id="file-input"
         type="file"
         multiple
-        style={{ display: 'none' }}
+        accept="image/*"
+        className="hidden-input"
         onChange={handleFileSelection}
       />
     </div>
   );
-};
+}
 
 export default FileUpload;
