@@ -271,7 +271,7 @@ def update_faces(faces_data: dict, db: Session = Depends(get_db)):
             )
         
         db.commit()
-        return {"status": "success", "message": "Names updated successfully"}
+        return
     
     except Exception as e:
         db.rollback()

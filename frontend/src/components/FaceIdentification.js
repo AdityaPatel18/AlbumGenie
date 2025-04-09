@@ -67,7 +67,6 @@ const FaceIdentification = () => {
         throw new Error('Failed to save names');
       }
 
-      alert('Names saved successfully!');
       navigate('/Main');
     } catch (error) {
       console.error('Error saving names:', error);
