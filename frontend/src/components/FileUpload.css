@@ -1,0 +1,220 @@
+/* Base styles */
+.app-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #2a0845 0%, #3841a8 100%);
+  padding: 1rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.album-genie-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+}
+
+/* Decorative elements */
+.decorative-bubble {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.2;
+  filter: blur(20px);
+}
+
+.bubble-top-left {
+  top: -24px;
+  left: -24px;
+  width: 80px;
+  height: 80px;
+  background-color: #9333ea;
+}
+
+.bubble-bottom-right {
+  bottom: -32px;
+  right: -32px;
+  width: 128px;
+  height: 128px;
+  background-color: #3b82f6;
+}
+
+/* Main container */
+.main-container {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Header styling */
+.app-header {
+  background: linear-gradient(to right, #4f46e5, #7e22ce);
+  padding: 1.5rem;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.app-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.app-subtitle {
+  color: rgba(219, 234, 254, 0.8);
+  text-align: center;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+}
+
+/* Content area */
+.app-content {
+  padding: 1.5rem;
+}
+
+.file-display-area {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  min-height: 16rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 12rem;
+  color: rgba(254, 219, 221, 0.6);
+}
+
+.empty-state p {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* File grid */
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+/* File item */
+.file-item {
+  position: relative;
+  group: 1;
+}
+
+.file-item:hover .remove-button {
+  opacity: 1;
+}
+
+.file-thumbnail {
+  aspect-ratio: 1/1;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.file-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-button {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 50%;
+  padding: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+/* Controls */
+.control-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.add-button, .process-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.add-button {
+  background-color: #4f46e5;
+}
+
+.add-button:hover {
+  background-color: #4338ca;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.process-button {
+  background: linear-gradient(to right, #10b981, #059669);
+}
+
+.process-button:hover {
+  background: linear-gradient(to right, #059669, #047857);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.process-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.file-formats {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgba(219, 234, 254, 0.5);
+}
+
+/* Hidden file input */
+.hidden-input {
+  display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .file-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .control-buttons {
+    flex-direction: column;
+  }
+}

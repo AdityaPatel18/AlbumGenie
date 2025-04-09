@@ -2,7 +2,7 @@
 services:
   postgres:
     image: postgres:latest
-    container_name: database-albumgenie
+    container_name: postgres
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
@@ -22,13 +22,29 @@ services:
       - postgres
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend:/app
     
   frontend:
-    image: nginx:alpine
+    build:
+      context: ./frontend
+    container_name: frontend-albumgenie
     ports:
-      - "80:80"
+      - "3000:80"
     volumes:
-      - ./frontend/:/usr/share/nginx/html
-
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@albumgenie.com
+      PGADMIN_DEFAULT_PASSWORD: password
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
 volumes:
   postgres-data:
