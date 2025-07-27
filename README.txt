@@ -1,25 +1,20 @@
-# Image Grouping Project
-
+Image Grouping Project
 A machine learning application for automatically grouping images of people based on facial similarity.
 
-## Goals
-
+Goals
 Group images of people together, slowly adding more features:
 
-- Create backend, frontend, database
-- Transfer assets from frontend to backend  
-- Train model to group images together in database
-- Add feature to choose which faces you want to group
-- Add feature to group similar faces together and decide where to add ungrouped pictures
+Create backend, frontend, database
+Transfer assets from frontend to backend
+Train model to group images together in database
+Add feature to choose which faces you want to group
+Add feature to group similar faces together and decide where to add ungrouped pictures
+Status
+⚠️ This project has been discontinued.
 
-## Status
+The original database-driven approach was later scrapped in favor of a much more user-friendly web application called Clustra.
 
-**⚠️ This project has been discontinued.**
+Clustra offers the same face grouping functionality but with no database storage - providing complete peace of mind for end users who want to keep their photos private and secure.
 
-The original database-driven approach was later scrapped in favor of a much more user-friendly web application called **Clustra**. 
+For the current implementation, see the Clustra project instead.
 
-Clustra offers the same face grouping functionality but with **no database storage** - providing complete peace of mind for end users who want to keep their photos private and secure.
-
----
-
-*For the current implementation, see the Clustra project instead.*
